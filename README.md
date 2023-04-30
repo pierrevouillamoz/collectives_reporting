@@ -65,4 +65,4 @@ Then analysis functions can be applied to the EVENT dataset (filtered or not).
 - event_analysis : the agregation of members players, time duration per event type and activity type. There is two count methods in case of several activities : activity types are merged and counted one time or activity type are not merged and counted twice. Twice counting could be useful if nomenclotura of activity is important.
 - activity_leader_analysis : agregation of members players and time duration per event, activity type and leader id (main leader). There are two count methods too.
 - leader_analysis : agregation of members players and time duration per leader id (main leader). Only one count method.
-- The same reporting is available for coleader analysis : first get_coleader should be apply, then functions activity_leader_analysis and leader_analysis are applyed. get_coleader list only coleaders and remove main leader. 
+- The same reporting is available for coleader analysis : first get_coleader should be applied, then functions activity_leader_analysis and leader_analysis are applyed. get_coleader list only coleaders and remove main leader. 
