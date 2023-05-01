@@ -77,6 +77,7 @@ def extract_location(description):
                 else:
                     a=A[i].replace("lieu", "").strip()
                     a=a.strip(".")
+                    a=a.strip("*")
 
                 return a
 
@@ -310,7 +311,7 @@ def upgrade_events(start="2021-10-01", end="2022-09-30", event_status='Confirmed
     
     return EVENT
 
-def get_event(EVENT):
+def get_events(EVENT):
 
     """
     This function provides a clean dataset for human analysis 
@@ -346,7 +347,7 @@ def get_event(EVENT):
     
     return X
 
-def event_analysis(EVENT, methode='simple'):
+def events_analysis(EVENT, methode='simple'):
 
 
     """
@@ -427,7 +428,7 @@ def event_analysis(EVENT, methode='simple'):
     return OUT
 
 
-def activity_leader_analysis(EVENT, methode='simple'):
+def activity_leaders_analysis(EVENT, methode='simple'):
 
     
     
@@ -499,7 +500,7 @@ def activity_leader_analysis(EVENT, methode='simple'):
     return OUT
 
 
-def leader_analysis(EVENT):
+def leaders_analysis(EVENT):
     
     Nb_event=pd.pivot_table(EVENT, values="Active", index='main_leader_id', aggfunc="count")
     Nb_days=pd.pivot_table(EVENT, values="number_days", index='main_leader_id', aggfunc="sum")
@@ -509,7 +510,7 @@ def leader_analysis(EVENT):
     OUT.columns=["Nombre d'évènements","Nombre de jours","Nb pratiquants"]
     return OUT
 
-def get_coleader(EVENT):
+def get_coleaders(EVENT):
 
     """This function upgrade event with coleader only.
     After use leader_analysis or activity leader_analysis
@@ -587,7 +588,7 @@ def get_parents_only(EVENT):
     return X.title
 
 
-def filtration_by_title(EVENT,title):
+def filtration_by_parents_only(EVENT,title):
 
     """
     Thank to the title get with function get_parent_only, we can do a restriction to the child event
@@ -639,11 +640,11 @@ EVENT=upgrade_events(start="2021-10-01", end="2022-09-30", event_status="Confirm
 ##EVENT=filtration_by_camp(EVENT)
 
 EVENT.to_csv("resultats/liste.csv", sep=";", decimal=",")
-get_event(EVENT).to_csv("resultats/liste_light.csv", sep=";", decimal=",")
+get_eventsgit (EVENT).to_csv("resultats/liste_light.csv", sep=";", decimal=",")
 if len(EVENT)!=0:
-    event_analysis(EVENT, methode="simple").to_csv("resultats/participation.csv", sep=";", decimal=",")
-    activity_leader_analysis(EVENT, methode="simple").to_csv("resultats/leaders.csv", sep=";", decimal=",")
-    leader_analysis(EVENT).to_csv("resultats/leaders_light.csv", sep=";", decimal=",")
+    events_analysis(EVENT, methode="simple").to_csv("resultats/participation.csv", sep=";", decimal=",")
+    activity_leaders_analysis(EVENT, methode="simple").to_csv("resultats/leaders.csv", sep=";", decimal=",")
+    leaders_analysis(EVENT).to_csv("resultats/leaders_light.csv", sep=";", decimal=",")
     
 if len(EVENT)==0:
     print("Aucune activité")
