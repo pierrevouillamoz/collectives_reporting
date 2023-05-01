@@ -5,15 +5,15 @@ import pandas as pd
 activityTypes=pd.read_csv("data/activity_types.csv", sep=',')
 eventTags=pd.read_csv("data/event_tags.csv", sep=',')
 eventTypes=pd.read_csv("data/event_types.csv", sep=',')
-event=pd.read_csv("data/events.csv", sep=',', low_memory=False, parse_dates=["start","end"])
+events=pd.read_csv("data/events.csv", sep=',', low_memory=False, parse_dates=["start","end"])
 eventActivity=pd.read_csv("data/event_activity_types.csv", sep=',')
 registrations=pd.read_csv("data/registrations.csv", sep=',', low_memory=False)
 users=pd.read_csv("data/users.csv", sep=',')
 eventLeaders=pd.read_csv("data/event_leaders.csv", sep=',')
 
 #datacleaning
-event=event.drop(labels=["rendered_description", "photo"], axis=1)
-event=event.drop_duplicates()
+events=events.drop(labels=["rendered_description", "photo"], axis=1)
+events=events.drop_duplicates()
 activityTypes=activityTypes.drop(labels=["order"], axis=1)
 eventTypes=eventTypes.drop(labels=["terms_title","terms_file"], axis=1)
 eventActivity=eventActivity.drop_duplicates()
@@ -40,7 +40,8 @@ def extract_location(description):
     if type(description)==str:
 
         description=description.lower()
-        
+
+        #Volunteer set the location after the word "secteur"
         if "secteur" in description:
             A=description.split("\r\n")
             i=0
@@ -54,25 +55,33 @@ def extract_location(description):
                 a=A[i].replace("secteur", "").strip()
                 a=a.strip(".")
 
-            a=a.lower()
             return a
 
-        ##A Améliorer
+        #Sometime the word "lieu" is used to set the location
         if ("lieu" in description) and ("secteur" not in description):
             A=description.split("\r\n")
-            i=0
-            while "lieu" not in A[i]:
-                i=i+1
+            
+            for i in range(0,len(A)):
 
-            if ":" in A[i]:    
-                a=A[i].split(":")[1].strip()
-                a=a.strip(".")
+                #Unfortunately, "lieu" can be used for departure
+                if ("lieu" in A[i]) and (("départ" or "depart")not in  A[i]) and ("lieux" not in A[i]):
+                    break
+                
+            #Second check, because loop may not break and A[end] can exist without the word 'lieu'
+                
+            if ('lieu' in A[i] and (("départ" or "depart")not in  A[i])):       
+
+                if ":" in A[i]:    
+                    a=A[i].split(":")[1].strip()
+                    a=a.strip(".")
+                else:
+                    a=A[i].replace("lieu", "").strip()
+                    a=a.strip(".")
+
+                return a
+
             else:
-                a=A[i].replace("lieu", "").strip()
-                a=a.strip(".")
-
-            a=a.lower()
-            return a
+                return ""
             
         
         else:
@@ -169,7 +178,7 @@ def extract_age_gender(date_of_birth, gender, year):
     else:
         pass
 
-def upgrade_event(start="2021-10-01", end="2022-09-30", event_status='Confirmed'):
+def upgrade_events(start="2021-10-01", end="2022-09-30", event_status='Confirmed'):
 
     """
     The very step of our analysis is adding more informations to the event table.
@@ -178,16 +187,16 @@ def upgrade_event(start="2021-10-01", end="2022-09-30", event_status='Confirmed'
 
     In the code, some intern variable name will appear : A,B for a list, X, Y for a restricted dataset
     """
-    global activityTypes, eventTags, eventTypes, event, eventActivity, registrations, users, eventLeaders
+    global activityTypes, eventTags, eventTypes, events, eventActivity, registrations, users, eventLeaders
 
           
     #Step 1 : duration of activity
-    event["number_days"]=event["end"]-event["start"]
-    event["number_days"]=event["number_days"].apply(extract_duration)
+    events["number_days"]=events["end"]-events["start"]
+    events["number_days"]=events["number_days"].apply(extract_duration)
 
     #Step 2 : registration status in count (active, canceled, nho-show...)
     registrations1=pd.pivot_table(registrations, values='is_self', index='event_id', columns='status', aggfunc='count').fillna(0)
-    EVENT=pd.merge(event, registrations1, left_on="id", right_on="event_id", how="left")
+    EVENT=pd.merge(events, registrations1, left_on="id", right_on="event_id", how="left")
     EVENT=EVENT.rename(columns={"id":"event_id"})
     
     #Step 3 : age and gender class 
@@ -291,7 +300,7 @@ def upgrade_event(start="2021-10-01", end="2022-09-30", event_status='Confirmed'
     EVENT["Nb leader"]=1
     
     #Time filtration occurs at the end  to avoid trouble with the order of some items
-    EVENT=EVENT[(EVENT.start>=start)&(EVENT.end<end)]
+    EVENT=EVENT[(EVENT.start>=start)&(EVENT.end<=end)]
 
     #Filtration on "Confirmed event status". Other status is "canceled"
     if event_status == "Confirmed":
@@ -387,7 +396,7 @@ def event_analysis(EVENT, methode='simple'):
             for activity in S: #Iterations on activity as a modality of one columns
                 Y=X1[X1["multi_activity"]==activity] #Restriction of the dataset to  
 
-                A.append([eventType, #A est une liste, et contient les futures lignes du tableau final
+                A.append([eventType, #list object to store row of futur dataframes
                           activity,
                             len(Y["multi_activity"]),
                           Y["number_days"].sum(),
@@ -399,9 +408,9 @@ def event_analysis(EVENT, methode='simple'):
                           Y['Femme -18'].sum(),
                           Y['Homme -18'].sum()])
     
-    #La boucle est terminée
+    #End of loop
     
-    #Création du DataFrame à partir de A
+    #Make dataframe
     OUT=pd.DataFrame(A,  columns=["eventType",
                                 "activity",
                                 "Nombre d'évènements",
@@ -414,7 +423,7 @@ def event_analysis(EVENT, methode='simple'):
                                 'Femme -18', 
                                 'Homme -18',     
                                     ])
-    #OUT is 
+    
     return OUT
 
 
@@ -493,7 +502,7 @@ def activity_leader_analysis(EVENT, methode='simple'):
 def leader_analysis(EVENT):
     
     Nb_event=pd.pivot_table(EVENT, values="Active", index='main_leader_id', aggfunc="count")
-    Nb_days=pd.pivot_table(EVENT, values="number_days", index='main_leader_id', aggfunc="count")
+    Nb_days=pd.pivot_table(EVENT, values="number_days", index='main_leader_id', aggfunc="sum")
     Nb_pers=pd.pivot_table(EVENT, values="Active", index='main_leader_id', aggfunc="sum")
     
     OUT=pd.concat([Nb_event,Nb_days,Nb_pers], axis=1)
@@ -624,16 +633,17 @@ def filtration_by_tags(EVENT, tag="Séjour"):
 
 #test des fonctions
 
-EVENT=upgrade_event(start="2021-10-01", end="2022-09-30", event_status="Confirmed")
+EVENT=upgrade_events(start="2021-10-01", end="2022-09-30", event_status="Confirmed")
 
 
-#EVENT=filtration_by_camp(EVENT)
+##EVENT=filtration_by_camp(EVENT)
 
-EVENT.to_csv("test.csv", sep=";", decimal=",")
+EVENT.to_csv("resultats/liste.csv", sep=";", decimal=",")
+get_event(EVENT).to_csv("resultats/liste_light.csv", sep=";", decimal=",")
 if len(EVENT)!=0:
-    event_analysis(EVENT, methode="simple").to_csv("test1.csv", sep=";", decimal=",")
-    activity_leader_analysis(EVENT, methode="simple").to_csv("test2.csv", sep=";", decimal=",")
-    leader_analysis(EVENT).to_csv("test3.csv", sep=";", decimal=",")
+    event_analysis(EVENT, methode="simple").to_csv("resultats/participation.csv", sep=";", decimal=",")
+    activity_leader_analysis(EVENT, methode="simple").to_csv("resultats/leaders.csv", sep=";", decimal=",")
+    leader_analysis(EVENT).to_csv("resultats/leaders_light.csv", sep=";", decimal=",")
     
 if len(EVENT)==0:
     print("Aucune activité")
