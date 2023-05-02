@@ -1,11 +1,15 @@
 #coding: latin-1 
 import pandas as pd
+import demoji
 
 #dataloading
-activityTypes=pd.read_csv("data/activity_types.csv", sep=',')
+activityTypes=pd.read_csv("data/activity_types.csv", sep=',', encoding="latin")
 eventTags=pd.read_csv("data/event_tags.csv", sep=',')
 eventTypes=pd.read_csv("data/event_types.csv", sep=',')
-events=pd.read_csv("data/events.csv", sep=',', low_memory=False, parse_dates=["start","end"])
+events=pd.read_csv("data/events.csv", sep=',',
+                   low_memory=False,
+                   parse_dates=["start","end"])
+                   #encoding="latin")
 eventActivity=pd.read_csv("data/event_activity_types.csv", sep=',')
 registrations=pd.read_csv("data/registrations.csv", sep=',', low_memory=False)
 users=pd.read_csv("data/users.csv", sep=',')
@@ -32,6 +36,18 @@ eventTags.type=eventTags.type.replace({1:"Mobilité douce",
 
 #enrichissement des données
 
+def extract_title(title):
+
+    """This function cleans the title from emoji
+    """
+    dem = demoji.findall(title)
+    for item in dem.keys():
+        title=title.replace(item,'')
+
+    title=title.strip()
+
+    return title
+
 def extract_location(description):
 
     """This function extracts the location of the event
@@ -54,6 +70,8 @@ def extract_location(description):
             else:
                 a=A[i].replace("secteur", "").strip()
                 a=a.strip(".")
+                a=a.replace("*","")
+                a=a.replace("**","")
 
             return a
 
@@ -77,8 +95,8 @@ def extract_location(description):
                 else:
                     a=A[i].replace("lieu", "").strip()
                     a=a.strip(".")
-                    a=a.strip("*")
-
+                    a=a.replace("*","")
+                    a=a.replace("**","")
                 return a
 
             else:
@@ -299,6 +317,14 @@ def upgrade_events(start="2021-10-01", end="2022-09-30", event_status='Confirmed
     
     EVENT=pd.merge(EVENT, X, on="event_id", how="outer")
     EVENT["Nb leader"]=1
+
+    #Step 11 : add "mobilité douce" tag
+    X=eventTags[eventTags["type"]=="Mobilité douce"]
+    X=X[["event_id","type"]]
+    X["type"]=X["type"].replace(to_replace="Mobilité douce", value="oui")
+    X=X.rename(columns={"type":"Mobilité douce"})
+    EVENT=pd.merge(EVENT, X, on="event_id", how="outer")
+    
     
     #Time filtration occurs at the end  to avoid trouble with the order of some items
     EVENT=EVENT[(EVENT.start>=start)&(EVENT.end<=end)]
@@ -308,6 +334,10 @@ def upgrade_events(start="2021-10-01", end="2022-09-30", event_status='Confirmed
         EVENT=EVENT[EVENT.status=="Confirmed"]
     else:
         pass
+
+    #title cleaning
+    #EVENT["title"]=EVENT["title"].apply(extract_title)
+
     
     return EVENT
 
@@ -322,6 +352,7 @@ def get_events(EVENT):
              "multi_activity",
              "title",
              "location",
+             "Mobilité douce",
              "start",
              "end",
              "number_days",
@@ -343,7 +374,11 @@ def get_events(EVENT):
              "Waiting",
              "PaymentPending"]]
 
-    X.rename({"multi_activity":"Activity"})
+   
+    
+    X=X.rename(columns={"multi_activity":"Activity",
+                "Active":"Participants (hors encadrants)",
+                "num_slots":"Places ouvertes"})
     
     return X
 
@@ -639,13 +674,19 @@ EVENT=upgrade_events(start="2021-10-01", end="2022-09-30", event_status="Confirm
 
 ##EVENT=filtration_by_camp(EVENT)
 
-EVENT.to_csv("resultats/liste.csv", sep=";", decimal=",")
-get_eventsgit (EVENT).to_csv("resultats/liste_light.csv", sep=";", decimal=",")
-if len(EVENT)!=0:
-    events_analysis(EVENT, methode="simple").to_csv("resultats/participation.csv", sep=";", decimal=",")
-    activity_leaders_analysis(EVENT, methode="simple").to_csv("resultats/leaders.csv", sep=";", decimal=",")
-    leaders_analysis(EVENT).to_csv("resultats/leaders_light.csv", sep=";", decimal=",")
-    
-if len(EVENT)==0:
-    print("Aucune activité")
+EVENT.to_csv("resultats/liste.csv", sep=";", decimal=",", encoding="latin",
+             errors='ignore')
+get_events(EVENT).to_csv("resultats/liste_light.csv", sep=";", decimal=",",
+                         encoding="latin", errors="ignore")
+
+##if len(EVENT)!=0:
+##    events_analysis(EVENT, methode="simple").to_csv("resultats/participation.csv",
+##                                                    sep=";", decimal=",",encoding="latin")
+##    activity_leaders_analysis(EVENT, methode="simple").to_csv("resultats/leaders.csv",
+##                                                              sep=";", decimal=",",encoding="latin")
+##    leaders_analysis(EVENT).to_csv("resultats/leaders_light.csv",
+##                                   sep=";", decimal=",",encoding="latin")
+##    
+##if len(EVENT)==0:
+##    print("Aucune activité")
     
