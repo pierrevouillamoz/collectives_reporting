@@ -49,11 +49,11 @@ To achieve this goal, there are four types of functions :
 
 ## Analysis in practice
 
-First `upgrade_events` is applied to generate a complete dataset of events happened between two dates (e.g. from the october first to septembre the 30th the year after). upgrade_event requires functions : `extract_location`, `location_correction` and `extract_age_gender`. The output is a complete dataset of event : 
+First `upgrade_events` is applied to generate a complete dataset of events happened between two dates (e.g. from the october first to septembre the 30th the year after). upgrade_event requires functions : `extract_location`, `extract_title`, `location_correction` and `extract_age_gender`. The output is a complete dataset of event : 
 - number lines : number of events
 - number of colums : attributs (55 !)
 
-To get a shorter version of this output, member can use function `get_events`  (same number of line, only 25 attributs). 
+To get a shorter version of this output, member can use function `get_events`  (same number of line, only 26 attributs). 
 Output of upgrade_events is named EVENT.
 
 Now, member could apply some filtration functions on EVENT :
