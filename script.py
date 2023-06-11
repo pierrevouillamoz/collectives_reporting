@@ -341,6 +341,50 @@ def upgrade_events(start="2021-10-01", end="2022-09-30", event_status='Confirmed
     
     return EVENT
 
+def get_users_registrations (EVENTS, registrations, activity_filter=None,
+                             eventType_filter=None):
+
+    """
+    
+    """
+    
+
+    X=EVENTS[["event_id","eventType","multi_activity"]]
+
+    if activity_filter in X["multi_activity"].unique():
+
+        X=X[X["multi_activity"]==activity_filter]
+
+    if eventType_filter in X["eventType"].unique():
+
+        X=X[X["eventType"]==eventType_filter]
+
+    Y=pd.merge(registrations, X, on="event_id", how="right")
+
+    users_registration=pd.pivot_table(Y, values="event_id", index="user_id", columns="status",
+                   aggfunc='count').fillna(0)
+
+    return users_registration
+
+def users_registrations_analysis(users_registration):
+
+    A=[]
+
+    for i in users_registration.columns:
+
+        a=users_registration[i].value_counts()
+        A.append(a)
+
+    A=pd.concat(A, axis=1).fillna(0)
+
+    A.columns=Z.columns
+
+    A=A.sort_index() 
+
+    A=A.drop(index=0)
+
+    return A
+
 def get_events(EVENT):
 
     """
@@ -679,14 +723,22 @@ EVENT.to_csv("resultats/liste.csv", sep=";", decimal=",", encoding="latin",
 get_events(EVENT).to_csv("resultats/liste_light.csv", sep=";", decimal=",",
                          encoding="latin", errors="ignore")
 
-##if len(EVENT)!=0:
-##    events_analysis(EVENT, methode="simple").to_csv("resultats/participation.csv",
-##                                                    sep=";", decimal=",",encoding="latin")
-##    activity_leaders_analysis(EVENT, methode="simple").to_csv("resultats/leaders.csv",
-##                                                              sep=";", decimal=",",encoding="latin")
-##    leaders_analysis(EVENT).to_csv("resultats/leaders_light.csv",
-##                                   sep=";", decimal=",",encoding="latin")
-##    
-##if len(EVENT)==0:
-##    print("Aucune activité")
+if len(EVENT)!=0:
+    events_analysis(EVENT, methode="simple").to_csv("resultats/participation.csv",
+                                                    sep=";", decimal=",",encoding="latin",errors="ignore")
+    activity_leaders_analysis(EVENT, methode="simple").to_csv("resultats/leaders.csv",
+                                                              sep=";", decimal=",",encoding="latin",errors="ignore")
+    leaders_analysis(EVENT).to_csv("resultats/leaders_light.csv",
+                                   sep=";", decimal=",",encoding="latin",errors="ignore")
     
+if len(EVENT)==0:
+    print("Aucune activité")
+    
+Z=get_users_registrations (EVENT, registrations, activity_filter=None,
+                             eventType_filter=None)
+
+A=users_registrations_analysis(Z)
+
+A.to_csv("users_analysis.csv", sep=";", decimal=",")
+
+Z.to_csv("users_registrations.csv", sep=";", decimal=",")
