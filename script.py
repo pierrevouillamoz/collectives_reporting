@@ -345,6 +345,10 @@ def get_users_registrations (EVENTS, registrations, activity_filter=None,
                              eventType_filter=None):
 
     """
+    This function makes a users population based dataset.
+    The function needs the EVENT file previously computed to frame the result
+    between two dates.
+    By default, all events are taken into account, but two kind of filter are possible
     
     """
     
@@ -368,6 +372,10 @@ def get_users_registrations (EVENTS, registrations, activity_filter=None,
 
 def users_registrations_analysis(users_registration):
 
+    """
+    For each features we compute the distribution
+    """
+    
     A=[]
 
     for i in users_registration.columns:

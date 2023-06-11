@@ -68,3 +68,14 @@ Then analysis functions can be applied to the EVENT dataset (filtered or not).
 - `activity_leaders_analysis` : agregation of members players and time duration per event, activity type and leader id (main leader). There are two count methods too.
 - `leaders_analysis` : agregation of members players and time duration per leader id (main leader). Only one count method.
 - The same reporting is available for coleader analysis : first `get_coleaders` should be applied, then functions `activity_leaders_analysis` and `leaders_analysis` are applyed. `get_coleaders` list only coleaders and remove main leader. 
+
+## Analysis of users' behavior
+
+Previous functions were based on an population of events. The other side of our reporting is working on users' behavior. 
+
+`get_users_registrations` makes a users population based dataset. For each user, 
+features of the number of events done (Active), unregistered, etc.
+
+`users_registrations_analysis` is based on the result of the previous function.
+For each features, the distribution is computed and stored in the dataset. 
+  
